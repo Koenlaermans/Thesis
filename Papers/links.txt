@@ -1,0 +1,2 @@
+https://lilianweng.github.io/posts/2020-10-29-odqa/ = Open domain QA overview
+https://lilianweng.github.io/posts/2019-01-31-lm/ = Language models
