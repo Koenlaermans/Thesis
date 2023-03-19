@@ -1,58 +1,96 @@
-from haystack.document_stores import InMemoryDocumentStore
-from sentence_transformers import SentenceTransformer, util
-from haystack.document_stores import ElasticsearchDocumentStore
-from haystack.nodes import EmbeddingRetriever
-from haystack.pipelines import ExtractiveQAPipeline
-from haystack.nodes import FARMReader
-from pprint import pprint
-from haystack.utils import print_answers
-from haystack.utils import fetch_archive_from_http
-from haystack.nodes import BM25Retriever
-import os
-from haystack.pipelines import Pipeline
+tech_questions = "D:\\Pycharm\\Thesis\\TechQA\\TechQA\\training_and_dev\\training_Q_A.json"
+tech_documents = "D:\\Pycharm\\Thesis\\TechQA\\TechQA\\training_and_dev\\training_dev_technotes.json"
 
-from haystack.pipelines.standard_pipelines import TextIndexingPipeline
+import json
+import random
 
+f1 = open(tech_documents)
+all_documents = {}
+data1 = json.load(f1)
+for i in data1:
+    doc = data1[i]
+    DOC_ID = i
+    DOC_CONTENT = doc["text"]
+    all_documents[DOC_ID] = DOC_CONTENT
 
-document_store = ElasticsearchDocumentStore(
-    similarity="dot_product",
-    embedding_dim=768
-)
+f = open(tech_questions)
+data = json.load(f)
 
-doc_dir = "corpus\content\manuals_dump"
+all_questions = {}
 
-files_to_index = [doc_dir + "/" + f for f in os.listdir(doc_dir)]
-indexing_pipeline = TextIndexingPipeline(document_store)
-indexing_pipeline.run_batch(file_paths=files_to_index)
+questionss = {}
+count = 0
+for i in data:
+    QUESTION_ID = i['QUESTION_ID']
+    QUESTION_TITLE = i['QUESTION_TITLE']
+    QUESTION_TEXT = i['QUESTION_TEXT']
+    if QUESTION_TEXT == "":
+        QUESTION_TEXT = QUESTION_TITLE
+        if QUESTION_TEXT == "":
+            continue
+    DOCUMENT = i['DOCUMENT']
+    ANSWER = i['ANSWER']
+    START_OFFSET = i['START_OFFSET']
+    END_OFFSET = i['END_OFFSET']
+    ANSWERABLE = i['ANSWERABLE']
+    if ANSWERABLE == "N":
+        ANSWERABLE = False
+        START_OFFSET = -1
+        END_OFFSET = 0
+        ANSWER = ""
+    else:
+        ANSWERABLE = True
+        START_OFFSET = int(START_OFFSET)
+        END_OFFSET = int(END_OFFSET)
+    DOC_IDS = i['DOC_IDS']
+    count += 1
+    print(count)
+    DOC_ID_RANDOM = DOCUMENT
+    if DOCUMENT == "-":
+        DOC_ID_RANDOM = random.choice(DOC_IDS)
 
-retriever = EmbeddingRetriever(
-    document_store=document_store,
-    embedding_model="sentence-transformers/multi-qa-mpnet-base-dot-v1",
-    model_format="sentence_transformers"
-)
+    DOC_CONTENT = all_documents[DOC_ID_RANDOM]
 
-document_store.update_embeddings(retriever)
-
-reader = FARMReader(model_name_or_path="deepset/roberta-base-squad2", use_gpu=True)
-
-pipe = ExtractiveQAPipeline(reader, retriever)
-
-prediction = pipe.run(
-    query="How do I change the radio frequencies?",
-    params={
-        "Retriever": {"top_k": 20},
-        "Reader": {"top_k": 20}
+    question = {
+        "question": QUESTION_TEXT,
+        "id": QUESTION_ID,
+        "answers": [
+            {
+                "answer_id": random.randint(0, 100000000),
+                "document_id": DOC_ID_RANDOM,
+                "question_id": QUESTION_ID,
+                "text": ANSWER,
+                "answer_start": START_OFFSET,
+                "answer_end": END_OFFSET,
+                "answer_category": None
+            }
+        ],
+        "is_impossible": not ANSWERABLE
     }
-)
-print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-pprint(prediction)
-print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-print_answers(
-    prediction,
-    details="minimum" ## Choose from `minimum`, `medium`, and `all`
-)
-print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-print_answers(
-    prediction,
-    details="all" ## Choose from `minimum`, `medium`, and `all`
-)
+    if DOCUMENT in questionss:
+        questionss[DOC_ID_RANDOM]["q"].append(question)
+    else:
+        questionss[DOC_ID_RANDOM] = {"q": [question], "context": DOC_CONTENT, "document_id": DOC_ID_RANDOM}
+
+squad = {"data": []}
+
+for q in questionss:
+    value = questionss[q]
+
+    paragraphs = []
+
+    qas = value["q"]
+    context = value["context"]
+    document_id = value["document_id"]
+
+    squad["data"].append({
+        "paragraphs": [
+            {
+                "qas": qas,
+                "context": context,
+                "document_id": document_id
+            }
+        ]
+    })
+# with open("dev.json", "w") as outfile:
+#     json.dump(squad, outfile)
