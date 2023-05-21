@@ -1,4 +1,4 @@
-tech_questions = "D:\\Pycharm\\Thesis\\dev.json"
+tech_questions = "D:\\Pycharm\\Thesis\\sample.json"
 
 import json
 import random
@@ -7,7 +7,7 @@ f1 = open(tech_questions)
 
 data = json.load(f1)
 labels = []
-for i in data["data"]:
+for i in data["data"][:300]:
     qas = i["paragraphs"][0]["qas"]
     context = i["paragraphs"][0]["context"]
     document_id = i["paragraphs"][0]["document_id"]
@@ -31,5 +31,6 @@ for i in data["data"]:
 
 squad = {"labels":labels}
 
-with open("dev_eval.json", "w") as outfile:
+print(len(labels))
+with open("training_eval.json", "w") as outfile:
     json.dump(squad, outfile)

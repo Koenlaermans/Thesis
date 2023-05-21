@@ -1,7 +1,30 @@
 tech_questions = "D:\\Pycharm\\Thesis\\TechQA\\TechQA\\training_and_dev\\training_Q_A.json"
 tech_documents = "D:\\Pycharm\\Thesis\\TechQA\\TechQA\\training_and_dev\\training_dev_technotes.json"
-
+tech_questions_val = "D:\\Pycharm\\Thesis\\TechQA\\TechQA\\validation\\validation_questions.json"
 import json
+sample = "D:\\Pycharm\\Thesis\\sample.json"
+f1 = open(sample)
+data1 = json.load(f1)
+print(len(data1["data"]))
+indices_to_remove = []
+for i in range(len(data1["data"])):
+    lenn = len(data1["data"][i]["paragraphs"][0]["context"])
+    if lenn>10000:
+        indices_to_remove.append(i)
+indices_to_remove.reverse()
+for i in range(len(indices_to_remove)):
+    del data1["data"][indices_to_remove[i]]
+
+
+with open("D:\\Pycharm\\Thesis\\sample_short_doc.json", "w") as outfile:
+    json.dump(data1, outfile)
+
+exit(0)
+
+
+
+
+
 import random
 
 f1 = open(tech_documents)
@@ -13,7 +36,7 @@ for i in data1:
     DOC_CONTENT = doc["text"]
     all_documents[DOC_ID] = DOC_CONTENT
 
-f = open(tech_questions)
+f = open(tech_questions_val)
 data = json.load(f)
 
 all_questions = {}
@@ -21,6 +44,9 @@ all_questions = {}
 questionss = {}
 count = 0
 for i in data:
+    count+=1
+    print(count)
+    continue
     QUESTION_ID = i['QUESTION_ID']
     QUESTION_TITLE = i['QUESTION_TITLE']
     QUESTION_TEXT = i['QUESTION_TEXT']
@@ -73,7 +99,7 @@ for i in data:
         questionss[DOC_ID_RANDOM] = {"q": [question], "context": DOC_CONTENT, "document_id": DOC_ID_RANDOM}
 
 squad = {"data": []}
-
+exit(0)
 for q in questionss:
     value = questionss[q]
 
